@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+/*
+  Design tokens per BUILD_PROMPT §5. Six colors, used strictly: sodium is the single
+  accent (one thing per screen), signal is warnings only. Overpass for UI/body, Overpass
+  Mono for every dollar figure/mile count/date — numbers are the product.
+*/
+@theme inline {
+  --color-ink: #12140f;
+  --color-pine: #24503f;
+  --color-asphalt: #6b7169;
+  --color-sodium: #e8a33d;
+  --color-snow: #fafaf7;
+  --color-signal: #c1462e;
+  --font-sans: var(--font-overpass), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-overpass-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* shadcn/ui (dashboard only) expects this standard token set — aliased to the 6
+     brand colors above rather than introducing new ones. `secondary`/`muted`/`accent`
+     are light asphalt tints for neutral surfaces (hover states, subtle backgrounds);
+     sodium is deliberately NOT wired in here, since it's reserved as the site's single
+     per-screen accent, not a ubiquitous hover color. */
+  --color-background: var(--color-snow);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-snow);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-snow);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-pine);
+  --color-primary-foreground: var(--color-snow);
+  --color-secondary: color-mix(in srgb, var(--color-asphalt) 15%, var(--color-snow) 85%);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: color-mix(in srgb, var(--color-asphalt) 15%, var(--color-snow) 85%);
+  --color-muted-foreground: var(--color-asphalt);
+  --color-accent: color-mix(in srgb, var(--color-asphalt) 15%, var(--color-snow) 85%);
+  --color-accent-foreground: var(--color-ink);
+  --color-destructive: var(--color-signal);
+  --color-destructive-foreground: var(--color-snow);
+  --color-border: color-mix(in srgb, var(--color-asphalt) 35%, transparent);
+  --color-input: color-mix(in srgb, var(--color-asphalt) 35%, transparent);
+  --color-ring: var(--color-pine);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-snow);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  /* Several heroes break out of their container to go full-bleed (w-screen +
+     calc(50% - 50vw)); on a page with a vertical scrollbar that can overshoot by the
+     scrollbar's own width. This is the one global safety net instead of repeating an
+     overflow-x guard on every page that uses one. */
+  overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.015em;
+}
+
+/* Every interactive surface gets a deliberate, quick transition instead of an instant
+   snap (ui-ux-pro-max flags 0ms state changes as an anti-pattern). Kept short enough
+   that it reads as responsiveness, not decoration. */
+button, a, input {
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease,
+    opacity 150ms ease;
+}
+
+/* The one recurring structural motif: a 3px sodium rule under anything acting as a
+   masthead or section header — the highway-stripe idea, used exactly once per surface. */
+.route-rule {
+  border-bottom: 3px solid var(--color-sodium);
+}
+
+/* Numbers are the product: right-aligned mono at a heavier weight than the label beside it. */
+.figure {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The one orchestrated moment (BUILD_PROMPT §5): when a result first appears, it
+   settles in rather than snapping into place. Triggered once per mount — re-keying the
+   element on new data re-runs it, so a recalculation reads as "this changed" too. */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  animation: reveal 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Same reveal, sequenced across a short list of related results (e.g. the three trip
+   tiers) so they read as being presented one after another, not dumped in at once. */
+.reveal-stagger > * {
+  animation: reveal 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reveal-stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.reveal-stagger > *:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.reveal-stagger > *:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+/* Visible keyboard focus everywhere (BUILD_PROMPT §5 floor: WCAG AA, focus rings).
+   Sodium alone can't clear the required 3:1 non-text contrast against every background
+   this site actually uses: it's ~2.1:1 against snow (most of the page) but ~4.2:1
+   against pine (active toggles, primary buttons) — no single flat color between those
+   two luminances clears 3:1 against both. An ink ring sandwiched between two snow
+   rings sidesteps the problem: ink-vs-snow is ~19:1 regardless of what's underneath,
+   and the outer snow ring itself reads clearly against pine (8.8:1) when that's the
+   backdrop. At least one high-contrast edge is always visible. */
+:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 7px var(--color-snow);
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 50;
+  background: var(--color-pine);
+  color: var(--color-snow);
+  padding: 0.75rem 1rem;
+}
+
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

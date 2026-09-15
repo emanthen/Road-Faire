@@ -1,0 +1,18 @@
+Real NPS photos, downloaded 2026-09-05 from each park's own nps.gov homepage
+(https://www.nps.gov/<code>/index.htm). Public domain — works of the US federal
+government (17 U.S.C. § 105) — no license/attribution required, credit given anyway.
+
+acad.jpg  https://www.nps.gov/acad/index.htm
+brca.jpg  https://www.nps.gov/brca/index.htm
+ever.jpg  https://www.nps.gov/ever/index.htm
+glac.jpg  https://www.nps.gov/glac/index.htm
+grca.jpg  https://www.nps.gov/grca/index.htm
+grte.jpg  https://www.nps.gov/grte/index.htm
+romo.jpg  https://www.nps.gov/romo/index.htm
+seki.jpg  https://www.nps.gov/seki/index.htm
+yell.jpg  https://www.nps.gov/yell/index.htm
+yose.jpg  https://www.nps.gov/yose/index.htm
+zion.jpg  https://www.nps.gov/zion/index.htm
+
+pull.jpg  https://www.nps.gov/pull/index.htm (downloaded 2026-09-08)
+liho.jpg  https://www.nps.gov/liho/index.htm (downloaded 2026-09-08)

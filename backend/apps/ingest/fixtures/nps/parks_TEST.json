@@ -1,0 +1,14 @@
+{
+  "total": "1",
+  "data": [
+    {
+      "id": "test-id-0001",
+      "parkCode": "TEST",
+      "fullName": "Test National Park",
+      "description": "A synthetic park record used only by automated tests.",
+      "latitude": "44.4280",
+      "longitude": "-110.5885",
+      "states": "WY,MT,ID"
+    }
+  ]
+}

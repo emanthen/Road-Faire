@@ -1,0 +1,99 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-04T17:13:20Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 6645491939,
+      "lat": 44.3523383,
+      "lon": -68.2258946,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "covered": "no",
+        "fee": "no",
+        "fountain": "bottle_refill",
+        "indoor": "no",
+        "lit": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 6677866655,
+      "lat": 44.3914871,
+      "lon": -68.2044143,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10083054871,
+      "lat": 44.3204022,
+      "lon": -68.2540748,
+      "tags": {
+        "amenity": "drinking_water",
+        "bottle": "yes",
+        "fountain": "bubbler",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11975089453,
+      "lat": 44.3080872,
+      "lon": -68.2036466,
+      "tags": {
+        "amenity": "drinking_water",
+        "man_made": "water_tap"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11975133855,
+      "lat": 44.3078173,
+      "lon": -68.2027536,
+      "tags": {
+        "amenity": "drinking_water",
+        "man_made": "water_tap"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11975281852,
+      "lat": 44.3071925,
+      "lon": -68.2044161,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13005150244,
+      "lat": 44.3298382,
+      "lon": -68.184225,
+      "tags": {
+        "amenity": "drinking_water",
+        "fountain": "bubbler"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13134750430,
+      "lat": 44.3620826,
+      "lon": -68.2079287,
+      "tags": {
+        "access": "yes",
+        "amenity": "drinking_water",
+        "fee": "no",
+        "man_made": "water_tap",
+        "wheelchair": "yes"
+      }
+    }
+  ]
+}

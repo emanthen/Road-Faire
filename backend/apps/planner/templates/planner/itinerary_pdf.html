@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roadfare trip options</title>
+<style>
+  @page { size: letter; margin: 0.75in; }
+  body { font-family: Georgia, "Times New Roman", serif; color: #12140f; font-size: 10.5pt; }
+  h1 { font-size: 18pt; margin: 0 0 4pt; color: #12140f; }
+  .meta { color: #6b7169; font-size: 9.5pt; margin: 0 0 24pt; }
+  h2 { font-size: 13pt; color: #24503f; margin: 20pt 0 6pt; border-bottom: 1px solid #12140f; padding-bottom: 4pt; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10pt; }
+  th, td { text-align: left; padding: 3pt 6pt 3pt 0; border-bottom: 1px solid #d8d6ce; font-size: 10pt; }
+  th { color: #6b7169; font-weight: normal; }
+  td.num, th.num { text-align: right; }
+  .total-row td { border-top: 1px solid #12140f; border-bottom: none; font-weight: bold; }
+  .stops { margin: 0 0 10pt; padding-left: 14pt; }
+  .stops li { margin-bottom: 2pt; }
+</style>
+</head>
+<body>
+  <h1>Your Roadfare trip options</h1>
+  <p class="meta">
+    {{ trip_request.origin_airport }} &middot;
+    {{ trip_request.start_date }} to {{ trip_request.end_date }} &middot;
+    {{ trip_request.adults }} adult{{ trip_request.adults|pluralize }}{% if trip_request.children %}, {{ trip_request.children }} child{{ trip_request.children|pluralize:",ren" }}{% endif %} &middot;
+    {{ trip_request.vehicle_pref|title }}
+  </p>
+
+  {% for itinerary in itineraries %}
+  <h2>{{ itinerary.get_tier_display }} &mdash; ${{ itinerary.total_cost }}</h2>
+
+  <ol class="stops">
+    {% for day in itinerary.days.all %}
+      {% for stop in day.stops.all %}
+        <li>Day {{ day.day_number }}: {{ stop.spot.name }} ({{ stop.nights }} night{{ stop.nights|pluralize }})</li>
+      {% endfor %}
+    {% endfor %}
+  </ol>
+
+  <table>
+    <thead>
+      <tr><th>Cost category</th><th class="num">Amount</th></tr>
+    </thead>
+    <tbody>
+      {% for line in itinerary.cost_lines.all %}
+      <tr><td>{{ line.get_category_display }}</td><td class="num">${{ line.amount }}</td></tr>
+      {% endfor %}
+      <tr class="total-row"><td>Total</td><td class="num">${{ itinerary.total_cost }}</td></tr>
+    </tbody>
+  </table>
+  {% endfor %}
+</body>
+</html>

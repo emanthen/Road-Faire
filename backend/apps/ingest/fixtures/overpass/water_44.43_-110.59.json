@@ -1,0 +1,136 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-04T17:23:36Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 1222683296,
+      "lat": 44.3951147,
+      "lon": -110.5644265,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919314,
+      "lat": 44.3970295,
+      "lon": -110.5683185,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919316,
+      "lat": 44.3959929,
+      "lon": -110.5669219,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919318,
+      "lat": 44.3956706,
+      "lon": -110.5639144,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919320,
+      "lat": 44.3957667,
+      "lon": -110.5629406,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919323,
+      "lat": 44.3949739,
+      "lon": -110.5615952,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919324,
+      "lat": 44.3945983,
+      "lon": -110.563027,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919327,
+      "lat": 44.3987979,
+      "lon": -110.5645583,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919329,
+      "lat": 44.3998157,
+      "lon": -110.5645328,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919333,
+      "lat": 44.4009933,
+      "lon": -110.5644467,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919336,
+      "lat": 44.4015647,
+      "lon": -110.5660931,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919337,
+      "lat": 44.400411,
+      "lon": -110.5678064,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919341,
+      "lat": 44.3990285,
+      "lon": -110.5667934,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12540919342,
+      "lat": 44.3995122,
+      "lon": -110.5683296,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    }
+  ]
+}

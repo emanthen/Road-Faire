@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+.turbo/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+# .terraform.lock.hcl is intentionally NOT ignored — Terraform's own recommendation is
+# to commit it so provider version selection is reproducible.
+
+# Misc
+*.log
+media/
+staticfiles/
+.tmp/
+.claude/
+.agents/

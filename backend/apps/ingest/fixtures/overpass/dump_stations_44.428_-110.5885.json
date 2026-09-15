@@ -1,0 +1,13 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API (synthetic test fixture)",
+  "elements": [
+    {
+      "type": "node",
+      "id": 222222,
+      "lat": 44.44,
+      "lon": -110.6,
+      "tags": { "amenity": "sanitary_dump_station" }
+    }
+  ]
+}

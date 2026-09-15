@@ -1,0 +1,35 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-04T17:23:36Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 3424485565,
+      "lat": 37.7387949,
+      "lon": -119.5658572,
+      "tags": {
+        "access": "yes",
+        "amenity": "sanitary_dump_station",
+        "fee": "no",
+        "opening_hours": "24/7",
+        "operator": "National Park Service",
+        "sanitary_dump_station:round_drain": "yes",
+        "water_point": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3755998537,
+      "lat": 37.8720167,
+      "lon": -119.3719841,
+      "tags": {
+        "amenity": "sanitary_dump_station",
+        "name": "Dump Station"
+      }
+    }
+  ]
+}

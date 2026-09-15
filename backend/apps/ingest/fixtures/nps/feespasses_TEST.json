@@ -1,0 +1,28 @@
+{
+  "total": "1",
+  "data": [
+    {
+      "id": "test-id-0001",
+      "parkCode": "TEST",
+      "entranceFees": [
+        {
+          "cost": "35.00",
+          "description": "Admits one private, non-commercial vehicle.",
+          "title": "Vehicle"
+        },
+        {
+          "cost": "20.00",
+          "description": "Admits one individual with no car.",
+          "title": "Individual"
+        }
+      ],
+      "entrancePasses": [
+        {
+          "cost": "70.00",
+          "description": "Admits pass holder for one year.",
+          "title": "Annual Pass"
+        }
+      ]
+    }
+  ]
+}

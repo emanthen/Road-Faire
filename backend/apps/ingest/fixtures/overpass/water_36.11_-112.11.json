@@ -1,0 +1,66 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-04T17:17:21Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 1476528023,
+      "lat": 36.0923095,
+      "lon": -112.117271,
+      "tags": {
+        "amenity": "drinking_water",
+        "name": "Drinking Water (Seasonal)",
+        "seasonal": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3184766828,
+      "lat": 36.0763722,
+      "lon": -112.1294604,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3184766833,
+      "lat": 36.0781636,
+      "lon": -112.1274184,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 7348700785,
+      "lat": 36.1012504,
+      "lon": -112.0960256,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10975463883,
+      "lat": 36.0773317,
+      "lon": -112.1290357,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13879458901,
+      "lat": 36.0772293,
+      "lon": -112.1286967,
+      "tags": {
+        "amenity": "drinking_water"
+      }
+    }
+  ]
+}

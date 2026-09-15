@@ -1,0 +1,30 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-04T17:19:26Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 9258714894,
+      "lat": 40.3556982,
+      "lon": -105.4570437,
+      "tags": {
+        "access": "yes",
+        "amenity": "sanitary_dump_station",
+        "operator": "Larimer County Open Space"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13879395926,
+      "lat": 40.3293691,
+      "lon": -105.5953286,
+      "tags": {
+        "amenity": "sanitary_dump_station"
+      }
+    }
+  ]
+}

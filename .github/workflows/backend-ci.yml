@@ -1,0 +1,50 @@
+name: backend-ci
+
+on:
+  pull_request:
+    paths: ["backend/**", ".github/workflows/backend-ci.yml"]
+  push:
+    branches: [main]
+    paths: ["backend/**", ".github/workflows/backend-ci.yml"]
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: roadfare
+          POSTGRES_USER: roadfare
+          POSTGRES_PASSWORD: roadfare
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U roadfare"
+          --health-interval 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DATABASE_URL: postgres://roadfare:roadfare@localhost:5432/roadfare
+      REDIS_URL: redis://localhost:6379/0
+      DJANGO_SECRET_KEY: ci-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.11.25"
+      - run: uv sync --all-extras --dev
+      - run: uv run ruff check .
+      - run: uv run mypy apps
+      - run: uv run python manage.py migrate
+      - run: uv run pytest -q --cov=apps --cov-report=term-missing

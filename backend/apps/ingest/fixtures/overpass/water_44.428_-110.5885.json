@@ -1,0 +1,13 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API (synthetic test fixture)",
+  "elements": [
+    {
+      "type": "node",
+      "id": 333333,
+      "lat": 44.429,
+      "lon": -110.589,
+      "tags": { "amenity": "drinking_water" }
+    }
+  ]
+}

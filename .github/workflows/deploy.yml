@@ -1,0 +1,100 @@
+# Builds and pushes both images (BUILD_PROMPT §8 Phase 7 gate), then rolls the ECS
+# services to the new image. Does NOT run terraform apply — provisioning/changing real
+# AWS infrastructure stays a manual, human-triggered action given the stakes.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_BACKEND_REPO: roadfare-backend
+  ECR_FRONTEND_REPO: roadfare-frontend
+  ECS_CLUSTER: roadfare-staging
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      backend_image: ${{ steps.image-tags.outputs.backend_image }}
+      frontend_image: ${{ steps.image-tags.outputs.frontend_image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+
+      - id: image-tags
+        run: |
+          echo "backend_image=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_BACKEND_REPO }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "frontend_image=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_FRONTEND_REPO }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.image-tags.outputs.backend_image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.image-tags.outputs.frontend_image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Registers a new task definition revision pointing at the new image, then
+      # updates the service to it. Doesn't touch Terraform-managed infrastructure —
+      # this is the application-deploy step, not the provisioning step.
+      - name: Deploy backend service
+        run: |
+          aws ecs describe-task-definition --task-definition roadfare-staging-backend \
+            --query 'taskDefinition' > backend-task-def.json
+          NEW_TASK_DEF=$(jq --arg IMAGE "${{ needs.build-and-push.outputs.backend_image }}" \
+            '.containerDefinitions[0].image = $IMAGE
+             | del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                   .compatibilities, .registeredAt, .registeredBy)' backend-task-def.json)
+          NEW_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF" \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+          aws ecs update-service --cluster "$ECS_CLUSTER" \
+            --service roadfare-staging-backend --task-definition "$NEW_ARN"
+
+      - name: Deploy frontend service
+        run: |
+          aws ecs describe-task-definition --task-definition roadfare-staging-frontend \
+            --query 'taskDefinition' > frontend-task-def.json
+          NEW_TASK_DEF=$(jq --arg IMAGE "${{ needs.build-and-push.outputs.frontend_image }}" \
+            '.containerDefinitions[0].image = $IMAGE
+             | del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                   .compatibilities, .registeredAt, .registeredBy)' frontend-task-def.json)
+          NEW_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF" \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+          aws ecs update-service --cluster "$ECS_CLUSTER" \
+            --service roadfare-staging-frontend --task-definition "$NEW_ARN"

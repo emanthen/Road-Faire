@@ -1,0 +1,10 @@
+{
+  "RECDATA": [
+    {
+      "PermitEntranceID": "1",
+      "FacilityID": "99999",
+      "PermitEntranceName": "Main Entrance",
+      "PermitEntranceDescription": "Timed-entry required 6am-4pm during peak season."
+    }
+  ]
+}

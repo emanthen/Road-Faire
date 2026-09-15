@@ -1,0 +1,15 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API (synthetic test fixture)",
+  "elements": [
+    {
+      "type": "way",
+      "id": 111111,
+      "tags": { "highway": "path", "name": "Test Loop Trail" },
+      "geometry": [
+        { "lat": 44.428, "lon": -110.5885 },
+        { "lat": 44.43, "lon": -110.59 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-04T17:15:21Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 3461842593,
+      "lat": 25.1366366,
+      "lon": -80.9402177,
+      "tags": {
+        "amenity": "sanitary_dump_station",
+        "sanitary_dump_station:round_drain": "yes",
+        "water_point": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3461842594,
+      "lat": 25.1385341,
+      "lon": -80.9413921,
+      "tags": {
+        "amenity": "sanitary_dump_station",
+        "sanitary_dump_station:round_drain": "yes",
+        "water_point": "yes"
+      }
+    }
+  ]
+}
