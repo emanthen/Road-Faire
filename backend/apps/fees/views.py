@@ -32,3 +32,6 @@ def calculate(request):
     )
 
     return Response(EntryFeeBreakdownSerializer(breakdown).data)
+
+
+calculate.cls.throttle_scope = "fees"

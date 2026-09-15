@@ -121,6 +121,20 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
+    # /api/fees/calculate, /api/plan and /api/leads are public and otherwise unthrottled;
+    # /api/plan will soon call a paid LLM API per request. AnonRateThrottle caps all
+    # anonymous traffic; ScopedRateThrottle adds a tighter per-endpoint cap wherever a
+    # view sets `throttle_scope`.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "120/hour",
+        "fees": "60/hour",
+        "plan": "10/hour",
+        "leads": "5/hour",
+    },
 }
 
 # The Next.js frontend runs on a different origin (localhost:3000 in dev), so every

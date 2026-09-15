@@ -1,19 +1,13 @@
 """POST /api/leads (honeypot + rate limit)."""
 
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
 
 from apps.leads.models import Lead
 from apps.leads.serializers import LeadSerializer
 
 
-class LeadRateThrottle(AnonRateThrottle):
-    rate = "5/hour"
-
-
 @api_view(["POST"])
-@throttle_classes([LeadRateThrottle])
 def create_lead(request):
     serializer = LeadSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -27,3 +21,6 @@ def create_lead(request):
 
     Lead.objects.create(email=data["email"], source=data["source"])
     return Response({"status": "ok"}, status=201)
+
+
+create_lead.cls.throttle_scope = "leads"

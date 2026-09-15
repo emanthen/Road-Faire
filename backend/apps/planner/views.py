@@ -85,6 +85,9 @@ def create_plan(request):
     )
 
 
+create_plan.cls.throttle_scope = "plan"
+
+
 @api_view(["GET"])
 def get_plan(request, plan_id):
     db_request, itineraries = _fetch_plan(plan_id)
