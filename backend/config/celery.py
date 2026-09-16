@@ -16,4 +16,8 @@ app.conf.beat_schedule = {
         "task": "apps.weather.tasks.warm_top_spots_cache",
         "schedule": 3600.0,
     },
+    "verify-fee-sources-weekly": {
+        "task": "apps.fees.tasks.verify_fee_sources_weekly",
+        "schedule": 604800.0,
+    },
 }

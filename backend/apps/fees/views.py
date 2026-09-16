@@ -1,10 +1,12 @@
 """POST /api/fees/calculate."""
 
+from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from apps.fees.dataclasses import ParkFeeInput
 from apps.fees.engine import entry_fees
+from apps.fees.repository import load_fee_schedule
 from apps.fees.serializers import EntryFeeBreakdownSerializer, FeeCalculateRequestSerializer
 
 
@@ -28,7 +30,11 @@ def calculate(request):
         parks,
         adults_16plus=data["adults"],
         is_us_resident=data["is_us_resident"],
+        rates=load_fee_schedule(timezone.now().date()),
         children_under_16=data["children"],
     )
 
     return Response(EntryFeeBreakdownSerializer(breakdown).data)
+
+
+calculate.cls.throttle_scope = "fees"

@@ -5,10 +5,12 @@ from decimal import Decimal
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from apps.catalog.models import Spot
+from apps.fees.repository import load_fee_schedule
 from apps.planner.engine.budget import build_trip_options
 from apps.planner.engine.candidates import AIRPORTS, candidate_spots
 from apps.planner.engine.clustering import _activities, _entry_fee, _fee_type, build_loops
@@ -66,7 +68,8 @@ def create_plan(request):
         engine_request.max_drive_hours_per_day,
         engine_request.start_date,
     )
-    options = build_trip_options(loops, engine_request)
+    rates = load_fee_schedule(timezone.now().date())
+    options = build_trip_options(loops, engine_request, rates)
 
     if not options:
         detail = (
@@ -83,6 +86,9 @@ def create_plan(request):
         ).data,
         status=201,
     )
+
+
+create_plan.cls.throttle_scope = "plan"
 
 
 @api_view(["GET"])

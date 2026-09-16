@@ -1,16 +1,18 @@
-"""Fee constants (BUILD_PROMPT §4.2). Every number here comes from BUILD_PROMPT §1's own
-2026 policy description. No magic numbers anywhere else in apps.fees.
+"""Fee constants (BUILD_PROMPT §4.2). No magic numbers anywhere else in apps.fees.
 
-SOURCE_URL below is a placeholder pointing at NPS's general fee-info page, not a citation
-for the specific 2026 non-resident surcharge policy — I don't have (and won't guess) the
-exact NPS.gov announcement URL. Swap this for the real citation before this leaves Phase 3;
-tracked as needs_verification on the seeded FeeSchedule/FeeFreeDay rows.
+Both source URLs below were fetched and checked against their live page content on
+2026-09-16: entrance-fee-prices.htm states the $100 nonresident fee verbatim, naming all
+11 parks at "ages 16 and over"; passes.htm states the $80 resident / $250 non-resident
+America the Beautiful annual pass prices verbatim. That's an automated confirmation, not
+a human sign-off — these rows still carry needs_verification=True in FeeSchedule, for the
+Block-D verification-queue screen to route to a person.
 """
 
 from datetime import date
 from decimal import Decimal
 
-SOURCE_URL = "https://www.nps.gov/aboutus/entrance-fee-prices.htm"
+SURCHARGE_SOURCE_URL = "https://www.nps.gov/aboutus/entrance-fee-prices.htm"
+ATB_PASS_SOURCE_URL = "https://www.nps.gov/planyourvisit/passes.htm"
 EFFECTIVE_FROM = date(2026, 1, 1)
 
 NONRESIDENT_SURCHARGE = Decimal("100")

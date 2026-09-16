@@ -8,7 +8,23 @@ from .base import SENTRY_DSN, env
 
 DEBUG = False
 
+# Local-memory cache is per-process — on ECS with multiple tasks each task would count
+# its own throttle hits, so a client could get N x the intended rate. Redis makes the
+# throttle (and every other cache use) shared across tasks.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env("REDIS_URL", default="redis://localhost:6379/0"),
+    }
+}
+
 SECURE_SSL_REDIRECT = True
+# The ALB terminates TLS and forwards plain HTTP to the ECS tasks, so Django must trust
+# the X-Forwarded-Proto header it sets rather than inspecting the (always-HTTP) request
+# itself — otherwise SECURE_SSL_REDIRECT sees "http" forever and redirect-loops.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000

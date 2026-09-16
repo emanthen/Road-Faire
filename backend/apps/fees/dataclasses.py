@@ -6,6 +6,18 @@ from typing import Literal
 
 
 @dataclass(frozen=True)
+class FeeRates:
+    """Every dollar amount and the surcharge park list, as effective on some date —
+    apps.fees.repository.load_fee_schedule() is what resolves this from FeeSchedule;
+    entry_fees() takes it as a plain argument and never touches the ORM itself."""
+
+    nonresident_surcharge: Decimal
+    atb_resident: Decimal
+    atb_nonresident: Decimal
+    surcharge_park_slugs: frozenset[str]
+
+
+@dataclass(frozen=True)
 class ParkFeeInput:
     """One park in a trip, as the engine needs to know it. `standard_fee` is the park's
     normal entrance fee (from apps.catalog.SpotCost in the real flow); `fee_type` says

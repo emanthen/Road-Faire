@@ -12,7 +12,7 @@ FUEL_ELEMENTS = {
         {"type": "node", "lat": 45.00, "lon": -111.00, "tags": {"name": "Far Pump"}},
     ]
 }
-EMPTY = {"elements": []}
+EMPTY: dict = {"elements": []}
 
 
 def setup_function():
