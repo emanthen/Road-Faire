@@ -1,5 +1,9 @@
 """POST /api/fees/calculate contract."""
 
+import pytest
+
+pytestmark = pytest.mark.django_db
+
 
 def test_calculate_returns_breakdown(api_client):
     payload = {
