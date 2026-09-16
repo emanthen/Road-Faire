@@ -34,6 +34,20 @@ class FixtureRecordingSession:
         fixture_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
         return data
 
+    def post_json(self, url: str, name: str, **kwargs) -> dict:
+        """Same record/replay behavior as get_json, for APIs that require POST (e.g.
+        Google Routes' computeRoutes, which has no GET form)."""
+        fixture_path = self.fixtures_dir / f"{name}.json"
+        if self.mode == "replay":
+            return json.loads(fixture_path.read_text(encoding="utf-8"))
+
+        response = self._session.post(url, **kwargs)
+        response.raise_for_status()
+        data = response.json()
+        self.fixtures_dir.mkdir(parents=True, exist_ok=True)
+        fixture_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        return data
+
     def get_text(self, url: str, name: str, **kwargs) -> str:
         """Same record/replay behavior as get_json, for non-JSON responses (e.g. NOAA's
         CSV normals product)."""

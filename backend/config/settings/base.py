@@ -383,6 +383,13 @@ SENTRY_DSN = env("SENTRY_DSN", default="")
 NPS_API_KEY = env("NPS_API_KEY", default="")
 RIDB_API_KEY = env("RIDB_API_KEY", default="")
 EIA_API_KEY = env("EIA_API_KEY", default="")
+# apps.ingest.clients.places: no key means places_monthly no-ops (never blocks or errors).
+GOOGLE_PLACES_API_KEY = env("GOOGLE_PLACES_API_KEY", default="")
+# apps.ingest.clients.osrm: fallback drive-time source when OSRM_BASE_URL is unset/unreachable.
+GOOGLE_ROUTES_API_KEY = env("GOOGLE_ROUTES_API_KEY", default="")
+# apps.ingest.clients.osrm: self-hosted routing engine, e.g. a local OSRM Docker
+# container — no default, since "http://localhost:5001" only makes sense with one running.
+OSRM_BASE_URL = env("OSRM_BASE_URL", default="")
 
 # --- apps.leads ---
 RESEND_API_KEY = env("RESEND_API_KEY", default="")
