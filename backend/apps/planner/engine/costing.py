@@ -8,7 +8,8 @@ planner UI can expose/adjust them later.
 
 from decimal import Decimal
 
-from apps.fees.dataclasses import ParkFeeInput
+from apps.core.money import usd
+from apps.fees.dataclasses import FeeRates, ParkFeeInput
 from apps.fees.engine import entry_fees
 from apps.planner.engine.tiers import TierPreset
 from apps.planner.engine.types import CostBreakdown, Loop, TripRequest
@@ -46,11 +47,18 @@ _FOOD_RATES = {
 }
 
 
-def cost_loop(loop: Loop, request: TripRequest, tier: TierPreset) -> CostBreakdown:
-    transport = (VAN_DAILY_RATE if tier.vehicle == "van" else CAR_DAILY_RATE) * loop.days
+def cost_loop(
+    loop: Loop, request: TripRequest, tier: TierPreset, rates: FeeRates | None = None
+) -> CostBreakdown:
+    """Pure — no ORM. `rates` is the FeeSchedule snapshot passed down from the view
+    (apps.planner.views.create_plan loads it once via apps.fees.repository and threads it
+    through build_trip_options -> cost_all_tiers -> here); omitting it falls back to the
+    constants.py bootstrap values, same as apps.fees.engine.entry_fees()."""
+
+    transport = usd((VAN_DAILY_RATE if tier.vehicle == "van" else CAR_DAILY_RATE) * loop.days)
 
     nights = sum(stop.nights for stop in loop.stops)
-    lodging = _LODGING_RATES[tier.lodging] * nights
+    lodging = usd(_LODGING_RATES[tier.lodging] * nights)
 
     entry_inputs = [
         ParkFeeInput(
@@ -62,6 +70,7 @@ def cost_loop(loop: Loop, request: TripRequest, tier: TierPreset) -> CostBreakdo
         entry_inputs,
         adults_16plus=request.adults,
         is_us_resident=request.is_us_resident,
+        rates=rates,
         children_under_16=request.children,
     )
     # Pay-as-you-go is the conservative default for a single trip's cost estimate — the
@@ -70,16 +79,16 @@ def cost_loop(loop: Loop, request: TripRequest, tier: TierPreset) -> CostBreakdo
     entry = entry_breakdown.pay_as_you_go_total
 
     mpg = VAN_MPG if tier.vehicle == "van" else CAR_MPG
-    fuel = (loop.total_miles / mpg) * FUEL_PRICE_USD_PER_GALLON
+    fuel = usd((loop.total_miles / mpg) * FUEL_PRICE_USD_PER_GALLON)
 
-    food = _FOOD_RATES[tier.food_tier] * request.people * loop.days
+    food = usd(_FOOD_RATES[tier.food_tier] * request.people * loop.days)
 
     # No price data modeled on apps.catalog.Activity yet (no cost field on that model) —
     # not guessed at here.
     activities = Decimal("0")
 
     subtotal = transport + lodging + entry + fuel + food + activities
-    buffer = subtotal * BUFFER_RATE
+    buffer = usd(subtotal * BUFFER_RATE)
     total = subtotal + buffer
 
     return CostBreakdown(

@@ -8,6 +8,7 @@ motel, mixed. COMFORT = van + motel, restaurant.
 from dataclasses import dataclass
 from typing import Literal
 
+from apps.fees.dataclasses import FeeRates
 from apps.planner.engine.types import Loop, TripOption, TripRequest
 
 
@@ -26,11 +27,13 @@ COMFORT = TierPreset(name="COMFORT", vehicle="van", lodging="motel", food_tier="
 ALL_TIERS = (LEAN, BALANCED, COMFORT)
 
 
-def cost_all_tiers(loop: Loop, request: TripRequest) -> list[TripOption]:
+def cost_all_tiers(
+    loop: Loop, request: TripRequest, rates: FeeRates | None = None
+) -> list[TripOption]:
     """Returns exactly 3 TripOptions for `loop` — one per tier preset."""
     from apps.planner.engine.costing import cost_loop
 
     return [
-        TripOption(tier=preset.name, loop=loop, cost=cost_loop(loop, request, preset))
+        TripOption(tier=preset.name, loop=loop, cost=cost_loop(loop, request, preset, rates))
         for preset in ALL_TIERS
     ]
