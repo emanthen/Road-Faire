@@ -26,3 +26,4 @@ def test_calculate_returns_429_past_its_scoped_limit(api_client, monkeypatch):
     response = api_client.post("/api/fees/calculate", {}, format="json")
 
     assert response.status_code == 429
+    cache.clear()  # don't leak this test's throttle hits into whatever runs next
