@@ -74,6 +74,9 @@ class Click(models.Model):
     session_key = models.CharField(max_length=100)
     referrer = models.CharField(max_length=500, blank=True)
     utm = models.JSONField(default=dict, blank=True)
+    is_bot = models.BooleanField(
+        default=False, help_text="User-Agent matched a known bot/crawler signature."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
