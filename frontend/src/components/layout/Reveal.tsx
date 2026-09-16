@@ -19,6 +19,9 @@ export default function Reveal({
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Client-only mount flag — there's no pre-mount value to read, so this can't be
+    // derived during render; the one extra render is the hydration-safety tradeoff.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasMounted(true);
     const el = ref.current;
     if (!el) return;

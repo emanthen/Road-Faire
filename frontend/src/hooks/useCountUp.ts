@@ -16,6 +16,9 @@ export function useCountUp(target: number, durationMs = 400): number {
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) {
+      // matchMedia is a browser-only read with no server-side equivalent to derive
+      // this from during render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValue(target);
       return;
     }

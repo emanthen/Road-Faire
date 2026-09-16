@@ -32,6 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedToken = window.localStorage.getItem(TOKEN_KEY);
     if (!storedToken) {
+      // localStorage is a browser-only read with no server-side equivalent to derive
+      // this from during render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
       return;
     }
