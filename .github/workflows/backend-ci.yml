@@ -22,8 +22,16 @@ jobs:
           POSTGRES_USER: roadfare
           POSTGRES_PASSWORD: roadfare
         ports: ["5432:5432"]
+        # -h 127.0.0.1 forces a TCP probe. postgis/postgis boots a *temporary* server
+        # first (to run its init scripts, incl. CREATE EXTENSION postgis) that only
+        # listens on the Unix socket, then shuts it down and restarts the real one
+        # listening on TCP too. Without -h, pg_isready defaults to the Unix socket and
+        # reports "accepting connections" during that temporary phase — Docker marks
+        # the service healthy, the job's `migrate` step connects, and the temp server
+        # shuts down for the restart mid-migration. Forcing TCP means the check can't
+        # pass until the real server (with postgis actually loaded) is listening.
         options: >-
-          --health-cmd "pg_isready -U roadfare"
+          --health-cmd "pg_isready -h 127.0.0.1 -U roadfare"
           --health-interval 5s
           --health-retries 10
       redis:
