@@ -52,3 +52,6 @@ exclude = ["migrations/"]
 # model instance it returns at runtime. Scoped to tests/ rather than disabled globally.
 module = "apps.*.tests.*"
 disable_error_code = ["arg-type", "attr-defined"]
+
+[tool.coverage.run]
+omit = ["*/tests/*", "*/migrations/*"]
