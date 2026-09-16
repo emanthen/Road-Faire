@@ -6,10 +6,13 @@ motel, mixed. COMFORT = van + motel, restaurant.
 """
 
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Literal
 
 from apps.fees.dataclasses import FeeRates
 from apps.planner.engine.types import Loop, TripOption, TripRequest
+from apps.planner.rates import RateRange
+from apps.vehicles.pricing import VehicleSpecInput
 
 
 @dataclass(frozen=True)
@@ -28,12 +31,21 @@ ALL_TIERS = (LEAN, BALANCED, COMFORT)
 
 
 def cost_all_tiers(
-    loop: Loop, request: TripRequest, rates: FeeRates | None = None
+    loop: Loop,
+    request: TripRequest,
+    rates: FeeRates | None = None,
+    van_spec: VehicleSpecInput | None = None,
+    rate_ranges: dict[str, RateRange] | None = None,
+    fuel_price: tuple[Decimal, bool] | None = None,
 ) -> list[TripOption]:
     """Returns exactly 3 TripOptions for `loop` — one per tier preset."""
     from apps.planner.engine.costing import cost_loop
 
     return [
-        TripOption(tier=preset.name, loop=loop, cost=cost_loop(loop, request, preset, rates))
+        TripOption(
+            tier=preset.name,
+            loop=loop,
+            cost=cost_loop(loop, request, preset, rates, van_spec, rate_ranges, fuel_price),
+        )
         for preset in ALL_TIERS
     ]

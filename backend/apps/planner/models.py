@@ -1,6 +1,7 @@
 """TripRequest, Itinerary, ItineraryDay, ItineraryStop, CostLine, SavedTrip."""
 
 import uuid
+from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
@@ -44,6 +45,23 @@ class Itinerary(TimeStampedModel):
     total_miles = models.DecimalField(max_digits=8, decimal_places=1)
     total_days = models.PositiveSmallIntegerField()
 
+    # The pass-vs-pay-as-you-go recommendation (apps.fees.dataclasses.PassRecommendation)
+    # — a single logical unit with non-money fields, so it lives here rather than as
+    # itemised CostLine rows. total_cost above always reflects pay-as-you-go (the
+    # conservative default); these are the "buy the pass and save $X" fields.
+    entry_annual_pass_total = MoneyField(default=Decimal("0"))
+    entry_pass_cheaper = models.CharField(
+        max_length=20,
+        choices=[
+            ("pay_as_you_go", "Pay as you go"),
+            ("annual_pass", "Annual pass"),
+            ("tie", "Tie"),
+        ],
+        default="pay_as_you_go",
+    )
+    entry_pass_savings = MoneyField(default=Decimal("0"))
+    entry_pass_explanation = models.TextField(blank=True)
+
     def __str__(self) -> str:
         return f"{self.tier} itinerary for {self.trip_request}"
 
@@ -85,13 +103,61 @@ class CostLine(models.Model):
         FOOD = "food", "Food"
         ACTIVITIES = "activities", "Activities"
         BUFFER = "buffer", "Buffer"
+        # Present only on a COMFORT (van) itinerary — the itemised true_cost() lines
+        # behind that itinerary's flat `transport` total (apps.vehicles.pricing).
+        VAN_BASE = "van_base", "Van — base rate"
+        VAN_MILEAGE_OVERAGE = "van_mileage_overage", "Van — mileage overage"
+        VAN_PREP_FEE = "van_prep_fee", "Van — prep fee"
+        VAN_INSURANCE = "van_insurance", "Van — insurance"
+        VAN_ONE_WAY_FEE = "van_one_way_fee", "Van — one-way fee"
+        VAN_GENERATOR = "van_generator", "Van — generator"
+        VAN_HOOKUP_PREMIUM = "van_hookup_premium", "Van — hookup premium"
+        VAN_ADDONS = "van_addons", "Van — add-ons"
 
     itinerary = models.ForeignKey(Itinerary, on_delete=models.CASCADE, related_name="cost_lines")
     category = models.CharField(max_length=20, choices=Category.choices)
     amount = MoneyField()
+    # True when `amount` came from a bootstrap assumption rather than a cited
+    # RateCard/EIA figure — only ever set on lodging/transport/fuel rows (BUILD_PROMPT
+    # C2: "$95-140/night (estimate)" is honest, "$120.00" from the same guess is not).
+    is_estimate = models.BooleanField(default=False)
+    range_low = MoneyField(null=True, blank=True)
+    range_high = MoneyField(null=True, blank=True)
 
     def __str__(self) -> str:
         return f"{self.get_category_display()}: {self.amount}"
+
+
+class RateCard(TimeStampedModel):
+    """A cited regional/seasonal lodging or car-rental rate range — what apps.planner's
+    flat cost-model constants become once real data exists for a region+month+category.
+    Seeded from apps.catalog.SpotCost.campsite_low/high (seed_rate_cards); a category
+    with no row here falls back to an uncited assumption band, flagged is_estimate on
+    the CostLine it produces (apps.planner.rates.load_rate_range)."""
+
+    class Category(models.TextChoices):
+        CAMPSITE = "campsite", "Campsite"
+        MOTEL = "motel", "Motel"
+        CAR = "car", "Car rental"
+
+    region = models.CharField(max_length=10, help_text="State abbreviation, e.g. 'WY'.")
+    month = models.PositiveSmallIntegerField()
+    category = models.CharField(max_length=20, choices=Category.choices)
+    low = MoneyField()
+    high = MoneyField()
+    source_url = models.URLField(blank=True)
+    verified_at = models.DateField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["region", "month", "category"],
+                name="unique_rate_card_region_month_category",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.region} {self.category} (month {self.month}): ${self.low}-${self.high}"
 
 
 class SavedTrip(TimeStampedModel):

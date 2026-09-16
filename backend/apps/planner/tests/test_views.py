@@ -1,5 +1,6 @@
 """POST /api/plan/, GET /api/plan/<uuid> contract."""
 
+from decimal import Decimal
 
 import pytest
 from django.contrib.gis.geos import Point
@@ -139,6 +140,55 @@ def test_get_plan_pdf_404s_for_unknown_id(api_client):
     response = api_client.get("/api/plan/00000000-0000-0000-0000-000000000000/pdf")
 
     assert response.status_code == 404
+
+
+def test_van_breakdown_and_pass_recommendation_round_trip(api_client):
+    _seed_spots(2)
+
+    create_response = api_client.post("/api/plan/", _payload(), format="json")
+    plan_id = create_response.data["id"]
+    get_response = api_client.get(f"/api/plan/{plan_id}")
+
+    for response in (create_response, get_response):
+        comfort = next(o for o in response.data["options"] if o["tier"] == "COMFORT")
+        assert comfort["cost"]["van_breakdown"] is not None
+        assert Decimal(comfort["cost"]["van_breakdown"]["total"]) == Decimal(
+            comfort["cost"]["transport"]
+        )
+
+        lean = next(o for o in response.data["options"] if o["tier"] == "LEAN")
+        assert lean["cost"]["van_breakdown"] is None
+
+        for option in response.data["options"]:
+            assert option["cost"]["entry_recommendation"]["explanation"]
+            assert Decimal(option["cost"]["entry_annual_pass_total"]) >= Decimal("0")
+
+    # And the actual figures, not just presence, round-trip identically.
+    created_comfort = next(o for o in create_response.data["options"] if o["tier"] == "COMFORT")
+    fetched_comfort = next(o for o in get_response.data["options"] if o["tier"] == "COMFORT")
+    assert created_comfort["cost"]["van_breakdown"] == fetched_comfort["cost"]["van_breakdown"]
+
+
+def test_estimated_categories_and_ranges_round_trip(api_client):
+    _seed_spots(2)
+
+    create_response = api_client.post("/api/plan/", _payload(), format="json")
+    plan_id = create_response.data["id"]
+    get_response = api_client.get(f"/api/plan/{plan_id}")
+
+    for response in (create_response, get_response):
+        for option in response.data["options"]:
+            cost = option["cost"]
+            assert "lodging" in cost["estimated_categories"]
+            assert cost["lodging_range"]["low"]
+            assert cost["lodging_range"]["high"]
+
+    created_lean = next(o for o in create_response.data["options"] if o["tier"] == "LEAN")
+    fetched_lean = next(o for o in get_response.data["options"] if o["tier"] == "LEAN")
+    assert created_lean["cost"]["lodging_range"] == fetched_lean["cost"]["lodging_range"]
+    created_estimates = created_lean["cost"]["estimated_categories"]
+    fetched_estimates = fetched_lean["cost"]["estimated_categories"]
+    assert created_estimates == fetched_estimates
 
 
 def test_stops_include_fee_and_activities_on_create_and_refetch(api_client):

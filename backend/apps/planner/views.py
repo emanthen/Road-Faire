@@ -10,6 +10,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from apps.catalog.models import Spot
+from apps.fees.dataclasses import PassRecommendation
 from apps.fees.repository import load_fee_schedule
 from apps.planner.engine.budget import build_trip_options
 from apps.planner.engine.candidates import AIRPORTS, candidate_spots
@@ -17,15 +18,19 @@ from apps.planner.engine.clustering import _activities, _entry_fee, _fee_type, b
 from apps.planner.engine.types import CostBreakdown, Loop, LoopStop, TripOption
 from apps.planner.engine.types import TripRequest as EngineTripRequest
 from apps.planner.engine.waypoints import leg_waypoints
+from apps.planner.fuel import current_fuel_price_per_gallon
 from apps.planner.models import CostLine, Itinerary, ItineraryDay, ItineraryStop
 from apps.planner.models import TripRequest as TripRequestModel
 from apps.planner.pdf import render_itinerary_pdf
+from apps.planner.rates import load_rate_range
 from apps.planner.serializers import (
     FeaturedTripSerializer,
     PlanRequestSerializer,
     PlanResponseSerializer,
     TierWaypointsSerializer,
 )
+from apps.vehicles.pricing import VanCostBreakdown
+from apps.vehicles.repository import load_default_van_spec
 
 COST_CATEGORIES = [
     "transport", "lodging", "entry", "fuel", "food", "activities", "buffer",
@@ -69,7 +74,18 @@ def create_plan(request):
         engine_request.start_date,
     )
     rates = load_fee_schedule(timezone.now().date())
-    options = build_trip_options(loops, engine_request, rates)
+    van_spec = load_default_van_spec()
+    # Rate ranges are per-region — candidates are all within drive radius of one
+    # origin, so the first candidate's state is a reasonable single region for the
+    # whole ranking pass, resolved once here rather than per-loop inside the engine.
+    region = candidates[0].state.abbreviation if candidates else ""
+    month = engine_request.start_date.month
+    rate_ranges = {
+        category: load_rate_range(region, month, category)
+        for category in ("campsite", "motel", "car")
+    }
+    fuel_price = current_fuel_price_per_gallon()
+    options = build_trip_options(loops, engine_request, rates, van_spec, rate_ranges, fuel_price)
 
     if not options:
         detail = (
@@ -185,14 +201,43 @@ def _persist(engine_request: EngineTripRequest, options: list[TripOption]) -> Tr
             total_cost=option.cost.total,
             total_miles=option.loop.total_miles,
             total_days=option.loop.days,
+            entry_annual_pass_total=option.cost.entry_annual_pass_total,
+            entry_pass_cheaper=option.cost.entry_recommendation.cheaper,
+            entry_pass_savings=option.cost.entry_recommendation.savings,
+            entry_pass_explanation=option.cost.entry_recommendation.explanation,
         )
         for i, stop in enumerate(option.loop.stops, start=1):
             day = ItineraryDay.objects.create(itinerary=itinerary, day_number=i)
             spot = Spot.objects.get(slug=stop.slug)
             ItineraryStop.objects.create(day=day, spot=spot, nights=stop.nights)
+        ranges = {"transport": option.cost.transport_range, "lodging": option.cost.lodging_range}
         for category in COST_CATEGORIES:
             amount = getattr(option.cost, category)
-            CostLine.objects.create(itinerary=itinerary, category=category, amount=amount)
+            line_range = ranges.get(category)
+            CostLine.objects.create(
+                itinerary=itinerary,
+                category=category,
+                amount=amount,
+                is_estimate=category in option.cost.estimated_categories,
+                range_low=line_range[0] if line_range else None,
+                range_high=line_range[1] if line_range else None,
+            )
+        if option.cost.van_breakdown is not None:
+            van = option.cost.van_breakdown
+            # dict keys are Category members — annotated str because Django's TextChoices
+            # attribute access types as tuple[str, str] to mypy without django-stubs.
+            van_lines: dict[str, Decimal] = {
+                str(CostLine.Category.VAN_BASE): van.base,
+                str(CostLine.Category.VAN_MILEAGE_OVERAGE): van.mileage_overage,
+                str(CostLine.Category.VAN_PREP_FEE): van.prep_fee,
+                str(CostLine.Category.VAN_INSURANCE): van.insurance,
+                str(CostLine.Category.VAN_ONE_WAY_FEE): van.one_way_fee,
+                str(CostLine.Category.VAN_GENERATOR): van.generator,
+                str(CostLine.Category.VAN_HOOKUP_PREMIUM): van.hookup_premium,
+                str(CostLine.Category.VAN_ADDONS): van.addons,
+            }
+            for category, amount in van_lines.items():
+                CostLine.objects.create(itinerary=itinerary, category=category, amount=amount)
 
     return db_request
 
@@ -208,6 +253,7 @@ def _itinerary_to_option(itinerary: Itinerary) -> TripOption:
             latitude=itinerary_stop.spot.geom.y,
             longitude=itinerary_stop.spot.geom.x,
             activities=_activities(itinerary_stop.spot),
+            region=itinerary_stop.spot.state.abbreviation,
         )
         for day in itinerary.days.all()
         for itinerary_stop in day.stops.all()
@@ -219,7 +265,32 @@ def _itinerary_to_option(itinerary: Itinerary) -> TripOption:
         month_score=0,  # not persisted — a re-fetched plan doesn't need a fresh score
     )
 
-    amounts = {line.category: line.amount for line in itinerary.cost_lines.all()}
+    lines_by_category = {line.category: line for line in itinerary.cost_lines.all()}
+    amounts = {category: line.amount for category, line in lines_by_category.items()}
+    estimated_categories = frozenset(
+        category for category, line in lines_by_category.items() if line.is_estimate
+    )
+
+    def _range(category: str) -> tuple[Decimal, Decimal] | None:
+        line = lines_by_category.get(category)
+        if line is None or line.range_low is None or line.range_high is None:
+            return None
+        return (line.range_low, line.range_high)
+
+    van_breakdown = None
+    if CostLine.Category.VAN_BASE in amounts:
+        van_breakdown = VanCostBreakdown(
+            base=amounts.get(CostLine.Category.VAN_BASE, Decimal("0")),
+            mileage_overage=amounts.get(CostLine.Category.VAN_MILEAGE_OVERAGE, Decimal("0")),
+            prep_fee=amounts.get(CostLine.Category.VAN_PREP_FEE, Decimal("0")),
+            insurance=amounts.get(CostLine.Category.VAN_INSURANCE, Decimal("0")),
+            one_way_fee=amounts.get(CostLine.Category.VAN_ONE_WAY_FEE, Decimal("0")),
+            generator=amounts.get(CostLine.Category.VAN_GENERATOR, Decimal("0")),
+            hookup_premium=amounts.get(CostLine.Category.VAN_HOOKUP_PREMIUM, Decimal("0")),
+            addons=amounts.get(CostLine.Category.VAN_ADDONS, Decimal("0")),
+            total=amounts.get("transport", Decimal("0")),
+        )
+
     cost = CostBreakdown(
         transport=amounts.get("transport", Decimal("0")),
         lodging=amounts.get("lodging", Decimal("0")),
@@ -230,6 +301,16 @@ def _itinerary_to_option(itinerary: Itinerary) -> TripOption:
         subtotal=itinerary.total_cost - amounts.get("buffer", Decimal("0")),
         buffer=amounts.get("buffer", Decimal("0")),
         total=itinerary.total_cost,
+        entry_annual_pass_total=itinerary.entry_annual_pass_total,
+        entry_recommendation=PassRecommendation(
+            cheaper=itinerary.entry_pass_cheaper,
+            savings=itinerary.entry_pass_savings,
+            explanation=itinerary.entry_pass_explanation,
+        ),
+        van_breakdown=van_breakdown,
+        estimated_categories=estimated_categories,
+        lodging_range=_range("lodging"),
+        transport_range=_range("transport"),
     )
 
     return TripOption(tier=itinerary.tier, loop=loop, cost=cost)

@@ -59,3 +59,55 @@ def test_golden_request_produces_golden_total():
 
     lean = next(o for o in options if o.tier == "LEAN")
     assert lean.cost.total == EXPECTED_LEAN_TOTAL
+
+
+# Hand-computed against the bootstrap _DEFAULT_VAN_SPEC (costing.py) and the same
+# GOLDEN_LOOP (3 nights total, 240 miles) — COMFORT tier is van/motel/restaurant:
+#   van base: 120/night * 3 nights = 360
+#   mileage overage: included 100mi/night * 3 = 300mi >= 240mi planned -> 0
+#   prep fee: 75 flat; insurance: 25/night * 3 = 75; one_way/generator/hookup/addons: 0
+#     (GOLDEN_LOOP is a round trip, no drop fee — see cost_loop's one_way=False)
+#   van total (== transport): 360 + 0 + 75 + 75 = 510
+#   lodging (motel, 3 nights): 110 * 3 = 330
+#   entry: same 470 as LEAN (residency/parks unchanged by tier)
+#   fuel (van, 18mpg): 240/18 * 3.80 = 50.67 (rounded)
+#   food (restaurant, 3 people, 3 days): 130 * 3 * 3 = 1170
+#   subtotal: 510 + 330 + 470 + 50.67 + 1170 = 2530.67
+#   buffer: 2530.67 * 0.15 = 379.60 (rounded); total: 2910.27
+EXPECTED_COMFORT_TOTAL = Decimal("2910.27")
+EXPECTED_VAN_BASE = Decimal("360")
+EXPECTED_VAN_INSURANCE = Decimal("75")
+EXPECTED_VAN_PREP_FEE = Decimal("75")
+
+
+def test_golden_request_produces_an_itemised_van_breakdown_not_a_collapsed_number():
+    options = build_trip_options([GOLDEN_LOOP], GOLDEN_REQUEST)
+
+    comfort = next(o for o in options if o.tier == "COMFORT")
+    assert comfort.cost.total == EXPECTED_COMFORT_TOTAL
+
+    van = comfort.cost.van_breakdown
+    assert van is not None
+    assert van.base == EXPECTED_VAN_BASE
+    assert van.mileage_overage == Decimal("0")
+    assert van.prep_fee == EXPECTED_VAN_PREP_FEE
+    assert van.insurance == EXPECTED_VAN_INSURANCE
+    assert van.one_way_fee == Decimal("0")
+    assert van.total == comfort.cost.transport
+
+    # Non-van tiers carry no itemised breakdown — nothing to collapse.
+    lean = next(o for o in options if o.tier == "LEAN")
+    assert lean.cost.van_breakdown is None
+
+
+def test_golden_request_surfaces_the_pass_recommendation_on_every_tier():
+    options = build_trip_options([GOLDEN_LOOP], GOLDEN_REQUEST)
+
+    for option in options:
+        # 2 non-resident adults, 2 surcharge parks -> pay-as-you-go entry ($470 across
+        # all tiers) beats one $250 non-resident pass ($500) here, same trade-off
+        # apps.fees.engine already proves — the point is the planner surfaces it, not
+        # decides it.
+        assert option.cost.entry_annual_pass_total == Decimal("500")
+        assert option.cost.entry_recommendation.cheaper == "pay_as_you_go"
+        assert option.cost.entry_recommendation.explanation

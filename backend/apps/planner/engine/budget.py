@@ -1,8 +1,12 @@
 """rank, filter to budget, 15% buffer (BUILD_PROMPT §4 STEP 4-5)."""
 
+from decimal import Decimal
+
 from apps.fees.dataclasses import FeeRates
 from apps.planner.engine.tiers import LEAN, cost_all_tiers
 from apps.planner.engine.types import Loop, TripOption, TripRequest
+from apps.planner.rates import RateRange
+from apps.vehicles.pricing import VehicleSpecInput
 
 
 def rank_loops(
@@ -21,10 +25,15 @@ def rank_loops(
 
 
 def build_trip_options(
-    loops: list[Loop], request: TripRequest, rates: FeeRates | None = None
+    loops: list[Loop],
+    request: TripRequest,
+    rates: FeeRates | None = None,
+    van_spec: VehicleSpecInput | None = None,
+    rate_ranges: dict[str, RateRange] | None = None,
+    fuel_price: tuple[Decimal, bool] | None = None,
 ) -> list[TripOption]:
     """Ranks candidate loops, returns the best-fitting one's 3 tier variants."""
     ranked = rank_loops(loops, request, rates)
     if not ranked:
         return []
-    return cost_all_tiers(ranked[0], request, rates)
+    return cost_all_tiers(ranked[0], request, rates, van_spec, rate_ranges, fuel_price)

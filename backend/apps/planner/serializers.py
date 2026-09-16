@@ -1,5 +1,7 @@
 """DRF serializers for TripRequest / Itinerary."""
 
+from decimal import Decimal
+
 from rest_framework import serializers
 
 
@@ -44,6 +46,24 @@ class LoopSerializer(serializers.Serializer):
     month_score = serializers.IntegerField()
 
 
+class VanCostBreakdownSerializer(serializers.Serializer):
+    base = serializers.DecimalField(max_digits=10, decimal_places=2)
+    mileage_overage = serializers.DecimalField(max_digits=10, decimal_places=2)
+    prep_fee = serializers.DecimalField(max_digits=10, decimal_places=2)
+    insurance = serializers.DecimalField(max_digits=10, decimal_places=2)
+    one_way_fee = serializers.DecimalField(max_digits=10, decimal_places=2)
+    generator = serializers.DecimalField(max_digits=10, decimal_places=2)
+    hookup_premium = serializers.DecimalField(max_digits=10, decimal_places=2)
+    addons = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+class EntryPassRecommendationSerializer(serializers.Serializer):
+    cheaper = serializers.CharField()
+    savings = serializers.DecimalField(max_digits=10, decimal_places=2)
+    explanation = serializers.CharField()
+
+
 class CostBreakdownSerializer(serializers.Serializer):
     transport = serializers.DecimalField(max_digits=10, decimal_places=2)
     lodging = serializers.DecimalField(max_digits=10, decimal_places=2)
@@ -54,6 +74,25 @@ class CostBreakdownSerializer(serializers.Serializer):
     subtotal = serializers.DecimalField(max_digits=10, decimal_places=2)
     buffer = serializers.DecimalField(max_digits=10, decimal_places=2)
     total = serializers.DecimalField(max_digits=10, decimal_places=2)
+    entry_annual_pass_total = serializers.DecimalField(max_digits=10, decimal_places=2)
+    entry_recommendation = EntryPassRecommendationSerializer()
+    estimated_categories = serializers.ListField(child=serializers.CharField())
+    lodging_range = serializers.SerializerMethodField()
+    transport_range = serializers.SerializerMethodField()
+
+    def _range(self, value):
+        if value is None:
+            return None
+        low, high = value
+        cents = Decimal("0.01")
+        return {"low": str(low.quantize(cents)), "high": str(high.quantize(cents))}
+
+    def get_lodging_range(self, obj):
+        return self._range(obj.lodging_range)
+
+    def get_transport_range(self, obj):
+        return self._range(obj.transport_range)
+    van_breakdown = VanCostBreakdownSerializer(allow_null=True)
 
 
 class TripOptionSerializer(serializers.Serializer):
