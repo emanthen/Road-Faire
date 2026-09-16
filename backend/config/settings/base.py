@@ -382,6 +382,7 @@ SENTRY_DSN = env("SENTRY_DSN", default="")
 # --- apps.ingest connector credentials ---
 NPS_API_KEY = env("NPS_API_KEY", default="")
 RIDB_API_KEY = env("RIDB_API_KEY", default="")
+EIA_API_KEY = env("EIA_API_KEY", default="")
 
 # --- apps.leads ---
 RESEND_API_KEY = env("RESEND_API_KEY", default="")

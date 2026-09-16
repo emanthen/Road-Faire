@@ -1,0 +1,13 @@
+{
+  "response": {
+    "data": [
+      {
+        "period": "2026-09-08",
+        "series": "EMM_EPMR_PTE_NUS_DPG",
+        "series-description": "U.S. Regular All Formulations Retail Gasoline Prices",
+        "value": "3.412",
+        "units": "$/GAL"
+      }
+    ]
+  }
+}

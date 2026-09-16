@@ -86,6 +86,7 @@ def _build_one_loop(
             latitude=spot.geom.y,
             longitude=spot.geom.x,
             activities=_activities(spot),
+            region=spot.state.abbreviation,
         )
         for spot, nights in zip(route, nights_per_stop, strict=True)
     ]

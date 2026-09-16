@@ -20,4 +20,8 @@ app.conf.beat_schedule = {
         "task": "apps.fees.tasks.verify_fee_sources_weekly",
         "schedule": 604800.0,
     },
+    "eia-fuel-weekly": {
+        "task": "apps.ingest.tasks.eia_fuel_weekly",
+        "schedule": 604800.0,
+    },
 }
