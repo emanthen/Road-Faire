@@ -48,6 +48,12 @@ jobs:
       DJANGO_SECRET_KEY: ci-only
     steps:
       - uses: actions/checkout@v4
+      # This job runs directly on the bare runner, not inside backend/Dockerfile's
+      # image — so, unlike there, GDAL/GEOS are never installed unless a step here
+      # does it. Without this, `manage.py migrate` (and anything importing
+      # django.contrib.gis) fails immediately with "Could not find the GDAL library",
+      # before printing a single migration line.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gdal-bin libgdal-dev
       - uses: astral-sh/setup-uv@v3
         with:
           version: "0.11.25"
