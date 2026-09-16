@@ -1,5 +1,6 @@
 """POST /api/plan, GET /api/plan/<uuid>."""
 
+import dataclasses
 from decimal import Decimal
 
 from django.db import transaction
@@ -21,6 +22,7 @@ from apps.planner.engine.waypoints import leg_waypoints
 from apps.planner.fuel import current_fuel_price_per_gallon
 from apps.planner.models import CostLine, Itinerary, ItineraryDay, ItineraryStop
 from apps.planner.models import TripRequest as TripRequestModel
+from apps.planner.narrative import NarrativeInput, generate_narrative
 from apps.planner.pdf import render_itinerary_pdf
 from apps.planner.rates import load_rate_range
 from apps.planner.serializers import (
@@ -37,13 +39,8 @@ COST_CATEGORIES = [
 ]
 
 
-@api_view(["POST"])
-def create_plan(request):
-    request_serializer = PlanRequestSerializer(data=request.data)
-    request_serializer.is_valid(raise_exception=True)
-    data = request_serializer.validated_data
-
-    engine_request = EngineTripRequest(
+def _engine_request_from(data: dict) -> EngineTripRequest:
+    return EngineTripRequest(
         origin_airport=data["origin_airport"],
         start_date=data["start_date"],
         end_date=data["end_date"],
@@ -56,15 +53,35 @@ def create_plan(request):
         max_drive_hours_per_day=data["max_drive_hours_per_day"],
     )
 
-    try:
-        candidates = candidate_spots(
-            engine_request.origin_airport,
-            engine_request.start_date,
-            engine_request.max_drive_hours_per_day,
-            engine_request.days,
-        )
-    except ValueError as exc:
-        return Response({"error": {"detail": str(exc)}}, status=400)
+
+def _engine_request_from_model(db_request: TripRequestModel) -> EngineTripRequest:
+    return EngineTripRequest(
+        origin_airport=db_request.origin_airport,
+        start_date=db_request.start_date,
+        end_date=db_request.end_date,
+        adults=db_request.adults,
+        children=db_request.children,
+        budget_usd=db_request.budget_usd,
+        is_us_resident=db_request.is_us_resident,
+        vehicle_pref=db_request.vehicle_pref,
+        vibe_tags=db_request.vibe_tags,
+        max_drive_hours_per_day=db_request.max_drive_hours_per_day,
+    )
+
+
+def generate_options(engine_request: EngineTripRequest) -> list[TripOption]:
+    """The full STEP 1-5 pipeline for one request — candidates through costed,
+    narrated TripOptions. Shared by the synchronous view and the async Celery task
+    (apps.planner.tasks.generate_plan_async) so there's exactly one place this runs.
+    Raises ValueError for an unknown origin airport; returns [] (not an error) when
+    nothing fits the budget/drive-hour constraints."""
+
+    candidates = candidate_spots(
+        engine_request.origin_airport,
+        engine_request.start_date,
+        engine_request.max_drive_hours_per_day,
+        engine_request.days,
+    )
 
     loops = build_loops(
         candidates,
@@ -86,6 +103,19 @@ def create_plan(request):
     }
     fuel_price = current_fuel_price_per_gallon()
     options = build_trip_options(loops, engine_request, rates, van_spec, rate_ranges, fuel_price)
+    return [_with_narrative(option) for option in options]
+
+
+@api_view(["POST"])
+def create_plan(request):
+    request_serializer = PlanRequestSerializer(data=request.data)
+    request_serializer.is_valid(raise_exception=True)
+    engine_request = _engine_request_from(request_serializer.validated_data)
+
+    try:
+        options = generate_options(engine_request)
+    except ValueError as exc:
+        return Response({"error": {"detail": str(exc)}}, status=400)
 
     if not options:
         detail = (
@@ -98,23 +128,68 @@ def create_plan(request):
 
     return Response(
         PlanResponseSerializer(
-            {"id": db_request.public_id, "request": db_request, "options": options}
+            {
+                "id": db_request.public_id,
+                "status": db_request.status,
+                "request": db_request,
+                "options": options,
+            }
         ).data,
         status=201,
     )
 
 
+@api_view(["POST"])
+def create_plan_async(request):
+    """Same input contract as create_plan, but returns immediately with a PENDING row
+    and enqueues apps.planner.tasks.generate_plan_async — for a request slow enough
+    that the caller would rather poll GET /api/plan/<id> than hold a connection open."""
+    request_serializer = PlanRequestSerializer(data=request.data)
+    request_serializer.is_valid(raise_exception=True)
+    data = request_serializer.validated_data
+
+    db_request = TripRequestModel.objects.create(
+        origin_airport=data["origin_airport"],
+        start_date=data["start_date"],
+        end_date=data["end_date"],
+        adults=data["adults"],
+        children=data["children"],
+        budget_usd=data["budget_usd"],
+        is_us_resident=data["is_us_resident"],
+        vehicle_pref=data["vehicle_pref"],
+        vibe_tags=data["vibe_tags"],
+        max_drive_hours_per_day=data["max_drive_hours_per_day"],
+        status=TripRequestModel.Status.PENDING,
+    )
+
+    from apps.planner.tasks import generate_plan_async
+
+    generate_plan_async.delay(db_request.id)
+
+    return Response(
+        {"id": db_request.public_id, "status": db_request.status}, status=202
+    )
+
+
 create_plan.cls.throttle_scope = "plan"
+create_plan_async.cls.throttle_scope = "plan"
 
 
 @api_view(["GET"])
 def get_plan(request, plan_id):
     db_request, itineraries = _fetch_plan(plan_id)
+    # PENDING/RUNNING/FAILED rows have no itineraries yet (or ever, if FAILED) — that's
+    # not an error, it's exactly what a poller is asking about.
     options = [_itinerary_to_option(itinerary) for itinerary in itineraries]
 
     return Response(
         PlanResponseSerializer(
-            {"id": db_request.public_id, "request": db_request, "options": options}
+            {
+                "id": db_request.public_id,
+                "status": db_request.status,
+                "request": db_request,
+                "options": options,
+            }
         ).data
     )
 
@@ -179,6 +254,18 @@ def _fetch_plan(plan_id):
     return db_request, itineraries
 
 
+def _with_narrative(option: TripOption) -> TripOption:
+    narrative_input = NarrativeInput(
+        tier=option.tier,
+        destinations=[stop.name for stop in option.loop.stops],
+        days=str(option.loop.days),
+        total_miles=str(option.loop.total_miles),
+        total_cost=f"${option.cost.total:,.2f}",
+        pass_recommendation=option.cost.entry_recommendation.explanation,
+    )
+    return dataclasses.replace(option, narrative=generate_narrative(narrative_input))
+
+
 @transaction.atomic
 def _persist(engine_request: EngineTripRequest, options: list[TripOption]) -> TripRequestModel:
     db_request = TripRequestModel.objects.create(
@@ -193,6 +280,16 @@ def _persist(engine_request: EngineTripRequest, options: list[TripOption]) -> Tr
         vibe_tags=engine_request.vibe_tags,
         max_drive_hours_per_day=engine_request.max_drive_hours_per_day,
     )
+    persist_itineraries(db_request, options)
+    return db_request
+
+
+@transaction.atomic
+def persist_itineraries(db_request: TripRequestModel, options: list[TripOption]) -> None:
+    """Creates Itinerary/ItineraryDay/ItineraryStop/CostLine rows for an existing
+    TripRequest row — split out from _persist() so apps.planner.tasks.
+    generate_plan_async can reuse it on a row it didn't create (that one was created
+    up front as PENDING, before generation even started)."""
 
     for option in options:
         itinerary = Itinerary.objects.create(
@@ -205,6 +302,7 @@ def _persist(engine_request: EngineTripRequest, options: list[TripOption]) -> Tr
             entry_pass_cheaper=option.cost.entry_recommendation.cheaper,
             entry_pass_savings=option.cost.entry_recommendation.savings,
             entry_pass_explanation=option.cost.entry_recommendation.explanation,
+            narrative=option.narrative,
         )
         for i, stop in enumerate(option.loop.stops, start=1):
             day = ItineraryDay.objects.create(itinerary=itinerary, day_number=i)
@@ -238,8 +336,6 @@ def _persist(engine_request: EngineTripRequest, options: list[TripOption]) -> Tr
             }
             for category, amount in van_lines.items():
                 CostLine.objects.create(itinerary=itinerary, category=category, amount=amount)
-
-    return db_request
 
 
 def _itinerary_to_option(itinerary: Itinerary) -> TripOption:
@@ -313,4 +409,4 @@ def _itinerary_to_option(itinerary: Itinerary) -> TripOption:
         transport_range=_range("transport"),
     )
 
-    return TripOption(tier=itinerary.tier, loop=loop, cost=cost)
+    return TripOption(tier=itinerary.tier, loop=loop, cost=cost, narrative=itinerary.narrative)

@@ -1,6 +1,7 @@
 """POST /api/plan/, GET /api/plan/<uuid> contract."""
 
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 from django.contrib.gis.geos import Point
@@ -52,6 +53,29 @@ def test_create_plan_returns_three_tier_options(api_client):
     assert response.status_code == 201
     assert [o["tier"] for o in response.data["options"]] == ["LEAN", "BALANCED", "COMFORT"]
     assert response.data["id"]
+    assert response.data["status"] == "done"
+
+
+def test_create_plan_async_returns_202_with_a_pending_status(api_client):
+    """The row is created and the task enqueued, but nothing has run yet by the time
+    this response comes back — that's the whole point of the async endpoint. The
+    pending -> running -> done/failed transition itself is generate_plan_async's job,
+    covered directly (not through a real Celery worker) in test_tasks.py. The task is
+    patched out here because CELERY_TASK_ALWAYS_EAGER (config/settings/test.py) makes
+    .delay() run it inline, which would race this test's own assertions about the
+    pending row."""
+    _seed_spots(2)
+
+    with patch("apps.planner.tasks.generate_plan_async.delay"):
+        response = api_client.post("/api/plan/async", _payload(), format="json")
+
+    assert response.status_code == 202
+    assert response.data["status"] == "pending"
+    assert response.data["id"]
+
+    get_response = api_client.get(f"/api/plan/{response.data['id']}")
+    assert get_response.data["status"] == "pending"
+    assert get_response.data["options"] == []
 
 
 def test_create_plan_echoes_the_request_summary(api_client):

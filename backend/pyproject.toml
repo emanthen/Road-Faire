@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Roadfare API — Django 5.1 + DRF"
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=0.72.0",
     "celery>=5.6.3",
     "django==5.1.*",
     "django-cors-headers>=4.9.0",

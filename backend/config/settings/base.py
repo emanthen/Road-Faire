@@ -387,6 +387,9 @@ EIA_API_KEY = env("EIA_API_KEY", default="")
 # --- apps.leads ---
 RESEND_API_KEY = env("RESEND_API_KEY", default="")
 
+# --- apps.planner.narrative: prose only, no key means the template fallback always runs ---
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
+
 # --- apps.accounts: "Sign in with Google" verifies the ID token's audience against
 # this. Get a real value from https://console.cloud.google.com/apis/credentials
 # (OAuth client ID, type "Web application") — there is no working default. ---

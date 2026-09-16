@@ -14,6 +14,12 @@ class TripRequest(TimeStampedModel):
     """A DB record of a submitted planning request — the persisted counterpart to
     apps.planner.engine.types.TripRequest."""
 
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        RUNNING = "running", "Running"
+        DONE = "done", "Done"
+        FAILED = "failed", "Failed"
+
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     origin_airport = models.CharField(max_length=4)
     start_date = models.DateField()
@@ -28,6 +34,11 @@ class TripRequest(TimeStampedModel):
     is_featured = models.BooleanField(
         default=False, help_text="Shown on /trips as a curated example itinerary."
     )
+    # POST /api/plan/ (synchronous) creates a row that's already DONE — itineraries
+    # exist by the time the row does. POST /api/plan/async creates a PENDING row with
+    # no itineraries yet and enqueues apps.planner.tasks.generate_plan_async, which
+    # moves it through RUNNING to DONE or FAILED; GET /api/plan/<id> polls this.
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DONE)
 
     def __str__(self) -> str:
         return f"TripRequest from {self.origin_airport} ({self.start_date})"
@@ -61,6 +72,11 @@ class Itinerary(TimeStampedModel):
     )
     entry_pass_savings = MoneyField(default=Decimal("0"))
     entry_pass_explanation = models.TextField(blank=True)
+
+    # apps.planner.narrative.generate_narrative() output — generated once at creation
+    # and stored, not regenerated on every refetch (that would mean another API call,
+    # or another chance to disagree with itself, per GET request).
+    narrative = models.TextField(blank=True)
 
     def __str__(self) -> str:
         return f"{self.tier} itinerary for {self.trip_request}"

@@ -69,6 +69,7 @@ export interface PlanRequestSummary {
 
 export interface PlanResponse {
   id: string;
+  status: "pending" | "running" | "done" | "failed";
   request: PlanRequestSummary;
   options: TripOption[];
 }

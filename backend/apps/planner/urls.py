@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.planner.views import (
     create_plan,
+    create_plan_async,
     get_plan,
     get_plan_pdf,
     get_plan_waypoints,
@@ -10,6 +11,7 @@ from apps.planner.views import (
 
 urlpatterns = [
     path("", create_plan, name="plan-create"),
+    path("async", create_plan_async, name="plan-create-async"),
     path("featured", list_featured_plans, name="plan-featured"),
     path("<uuid:plan_id>", get_plan, name="plan-detail"),
     path("<uuid:plan_id>/pdf", get_plan_pdf, name="plan-pdf"),

@@ -94,3 +94,7 @@ class TripOption:
     tier: Literal["LEAN", "BALANCED", "COMFORT"]
     loop: Loop
     cost: CostBreakdown
+    # Populated by the view after cost_all_tiers() returns — narrative generation makes
+    # an external API call, so it happens outside the pure engine, same reason rates/
+    # van_spec/fuel_price are resolved there instead of inside cost_loop().
+    narrative: str = ""

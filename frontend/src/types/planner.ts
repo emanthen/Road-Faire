@@ -37,6 +37,29 @@ export interface Loop {
   month_score: number;
 }
 
+export interface VanCostBreakdown {
+  base: string;
+  mileage_overage: string;
+  prep_fee: string;
+  insurance: string;
+  one_way_fee: string;
+  generator: string;
+  hookup_premium: string;
+  addons: string;
+  total: string;
+}
+
+export interface EntryPassRecommendation {
+  cheaper: "pay_as_you_go" | "annual_pass" | "tie";
+  savings: string;
+  explanation: string;
+}
+
+export interface CostRange {
+  low: string;
+  high: string;
+}
+
 export interface CostBreakdown {
   transport: string;
   lodging: string;
@@ -47,12 +70,22 @@ export interface CostBreakdown {
   subtotal: string;
   buffer: string;
   total: string;
+  entry_annual_pass_total: string;
+  entry_recommendation: EntryPassRecommendation;
+  van_breakdown: VanCostBreakdown | null;
+  // Categories among {"transport", "lodging", "fuel"} whose figure is a bootstrap
+  // assumption rather than cited data — render as a range with an estimate badge,
+  // never as the fake-precise dollar amount (BUILD_PROMPT C2).
+  estimated_categories: string[];
+  lodging_range: CostRange | null;
+  transport_range: CostRange | null;
 }
 
 export interface TripOption {
   tier: "LEAN" | "BALANCED" | "COMFORT";
   loop: Loop;
   cost: CostBreakdown;
+  narrative: string;
 }
 
 export interface RouteWaypoint {

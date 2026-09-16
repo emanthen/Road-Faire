@@ -99,6 +99,7 @@ class TripOptionSerializer(serializers.Serializer):
     tier = serializers.CharField()
     loop = LoopSerializer()
     cost = CostBreakdownSerializer()
+    narrative = serializers.CharField()
 
 
 class TripSummarySerializer(serializers.Serializer):
@@ -116,6 +117,7 @@ class TripSummarySerializer(serializers.Serializer):
 
 class PlanResponseSerializer(serializers.Serializer):
     id = serializers.UUIDField()
+    status = serializers.CharField()
     request = TripSummarySerializer()
     options = TripOptionSerializer(many=True)
 
