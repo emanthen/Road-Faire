@@ -1,7 +1,6 @@
 """Staff-only access + basic CRUD for the /api/admin/ dashboard API."""
 
 import pytest
-from django.contrib.auth import get_user_model
 
 from apps.catalog.tests.factories import SpotCostFactory, SpotFactory, StateFactory
 from apps.content.models import Page
