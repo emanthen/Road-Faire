@@ -397,6 +397,12 @@ RESEND_API_KEY = env("RESEND_API_KEY", default="")
 # --- apps.planner.narrative: prose only, no key means the template fallback always runs ---
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
 
+# --- apps.core.revalidate: pokes frontend/src/app/api/revalidate on data change.
+# No REVALIDATE_SECRET means notify_revalidate() no-ops — same posture as every other
+# optional external call in this app, since there's nothing safe to send without it. ---
+FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", default="http://localhost:3000")
+REVALIDATE_SECRET = env("REVALIDATE_SECRET", default="")
+
 # --- apps.accounts: "Sign in with Google" verifies the ID token's audience against
 # this. Get a real value from https://console.cloud.google.com/apis/credentials
 # (OAuth client ID, type "Web application") — there is no working default. ---

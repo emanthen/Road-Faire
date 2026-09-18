@@ -11,6 +11,7 @@ from decimal import Decimal, InvalidOperation
 from django.core.management.base import BaseCommand
 
 from apps.catalog.models import Spot, SpotCost
+from apps.core.revalidate import notify_revalidate
 from apps.ingest.clients.nps import NPSClient
 from apps.ingest.promote import promote_fields
 from apps.ingest.staging import StagedRecord
@@ -52,6 +53,7 @@ class Command(BaseCommand):
                 continue
             if result.changed:
                 cost.save()
+                notify_revalidate("spot", spot.slug)
                 changed += 1
 
         self.stdout.write(

@@ -10,7 +10,7 @@ interface ContentSitemapEntry {
   lastmod: string;
 }
 
-const SPOT_SUB_PATHS = ["", "/cost", "/best-time-to-visit", "/reservations", "/campervan"];
+export const SPOT_SUB_PATHS = ["", "/cost", "/best-time-to-visit", "/reservations", "/campervan"];
 
 async function spotRoutes(base: string): Promise<MetadataRoute.Sitemap> {
   try {
