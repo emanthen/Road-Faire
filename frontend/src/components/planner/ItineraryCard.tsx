@@ -1,6 +1,8 @@
 import CostLine from "@/components/cost/CostLine";
 import CostTable from "@/components/cost/CostTable";
 import PassRecommendation from "@/components/cost/PassRecommendation";
+import RouteLayer from "@/components/map/RouteLayer";
+import SpotMap from "@/components/map/SpotMap";
 import DayTimeline from "@/components/planner/DayTimeline";
 import VanCostBreakdown from "@/components/vehicle/VanCostBreakdown";
 import { formatUSD } from "@/lib/money";
@@ -48,6 +50,18 @@ export default function ItineraryCard({
       </p>
 
       {option.narrative && <p className="mt-3 text-ink">{option.narrative}</p>}
+
+      {option.loop.stops.length > 0 && (
+        <div className="mt-4">
+          <SpotMap
+            latitude={option.loop.stops[0].latitude}
+            longitude={option.loop.stops[0].longitude}
+            zoom={6}
+          >
+            <RouteLayer loop={option.loop} />
+          </SpotMap>
+        </div>
+      )}
 
       <div className="mt-4">
         <DayTimeline loop={option.loop} spotDetails={spotDetails} legWaypoints={legWaypoints} />

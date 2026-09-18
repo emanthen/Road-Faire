@@ -1,0 +1,7 @@
+# Every text file gets LF, everywhere it's checked out — regardless of a
+# contributor's core.autocrlf setting. Without this, a Windows checkout gives
+# backend/scripts/entrypoint.sh CRLF line endings, which breaks its `#!/bin/sh`
+# shebang inside the Linux container it's copied into (Docker reports the script
+# itself as "no such file or directory", since the interpreter path becomes
+# "/bin/sh\r").
+* text=auto eol=lf

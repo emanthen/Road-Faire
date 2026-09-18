@@ -5,6 +5,7 @@ import AtAGlance from "@/components/spot/AtAGlance";
 import Gallery from "@/components/spot/Gallery";
 import SpotHero from "@/components/spot/SpotHero";
 import SpotMap from "@/components/map/SpotMap";
+import SpotMarker from "@/components/map/SpotMarker";
 import { ApiError, fetchSpot } from "@/lib/api";
 import { safeSpotMetadata } from "@/lib/seo";
 
@@ -50,7 +51,9 @@ export default async function SpotOverviewPage({
           <h2 className="mb-2 text-lg font-medium text-pine">At a glance</h2>
           <AtAGlance cost={spot.cost} contactPhone={spot.contact_phone} />
         </div>
-        <SpotMap latitude={spot.latitude} longitude={spot.longitude} />
+        <SpotMap latitude={spot.latitude} longitude={spot.longitude}>
+          <SpotMarker latitude={spot.latitude} longitude={spot.longitude} label={spot.name} />
+        </SpotMap>
       </div>
       <div className="mt-8">
         <h2 className="mb-2 text-lg font-medium text-pine">Things to do</h2>
